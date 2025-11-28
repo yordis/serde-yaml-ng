@@ -151,3 +151,95 @@ fn test_tagged() {
     let serialized = serde_yaml_ng::to_value(&value).unwrap();
     assert_eq!(value, serialized);
 }
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_value_with_i128() {
+    use indoc::indoc;
+    use serde_derive::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Demo {
+        val_string: String,
+        val_i128: i128,
+        val: serde_yaml_ng::Value,
+    }
+
+    let yaml = indoc! {"
+        val_string: '123'
+        val_i128: -9223372036854776000
+        val: -9223372036854776000
+    "};
+
+    let demo: Demo = serde_yaml_ng::from_str(yaml).unwrap();
+    assert_eq!(demo.val_string, "123");
+    assert_eq!(demo.val_i128, -9223372036854776000i128);
+
+    match demo.val {
+        serde_yaml_ng::Value::Number(ref n) => {
+            assert_eq!(n.as_i128(), Some(-9223372036854776000i128));
+        }
+        _ => panic!("Expected Number value"),
+    }
+
+    let serialized = serde_yaml_ng::to_string(&demo).unwrap();
+    let deserialized: Demo = serde_yaml_ng::from_str(&serialized).unwrap();
+    assert_eq!(demo, deserialized);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_value_with_u128() {
+    let yaml = "18446744073709551616";
+    let value: serde_yaml_ng::Value = serde_yaml_ng::from_str(yaml).unwrap();
+
+    match value {
+        serde_yaml_ng::Value::Number(ref n) => {
+            assert!(n.is_u128());
+            assert_eq!(n.as_u128(), Some(18446744073709551616u128));
+        }
+        _ => panic!("Expected Number value"),
+    }
+
+    let serialized = serde_yaml_ng::to_string(&value).unwrap();
+    let deserialized: serde_yaml_ng::Value = serde_yaml_ng::from_str(&serialized).unwrap();
+    assert_eq!(value, deserialized);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_i128_u128_extreme_values() {
+    let yaml = "170141183460469231731687303715884105727";
+    let value: serde_yaml_ng::Value = serde_yaml_ng::from_str(yaml).unwrap();
+    if let serde_yaml_ng::Value::Number(n) = value {
+        assert_eq!(n.as_i128(), Some(i128::MAX));
+    }
+
+    let yaml = "-170141183460469231731687303715884105728";
+    let value: serde_yaml_ng::Value = serde_yaml_ng::from_str(yaml).unwrap();
+    if let serde_yaml_ng::Value::Number(n) = value {
+        assert_eq!(n.as_i128(), Some(i128::MIN));
+    }
+
+    let yaml = "340282366920938463463374607431768211455";
+    let value: serde_yaml_ng::Value = serde_yaml_ng::from_str(yaml).unwrap();
+    if let serde_yaml_ng::Value::Number(n) = value {
+        assert_eq!(n.as_u128(), Some(u128::MAX));
+    }
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_number_comparison_across_types() {
+    let small = Number::from(42u64);
+    let large = Number::from(42u128);
+    assert_eq!(small, large);
+
+    let small_neg = Number::from(-100i64);
+    let large_neg = Number::from(-100i128);
+    assert_eq!(small_neg, large_neg);
+
+    let beyond_i64 = Number::from(i64::MIN as i128 - 1);
+    let i64_min = Number::from(i64::MIN);
+    assert!(beyond_i64 < i64_min);
+}

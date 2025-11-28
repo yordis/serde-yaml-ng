@@ -1102,13 +1102,46 @@ where
     if let Some(int) = parse_negative_int(v, i64::from_str_radix) {
         return Ok(visitor.visit_i64(int));
     }
-    if let Some(int) = parse_unsigned_int(v, u128::from_str_radix) {
-        return Ok(visitor.visit_u128(int));
+
+    #[cfg(feature = "128bit-support")]
+    {
+        if let Some(int) = parse_unsigned_int(v, u128::from_str_radix) {
+            return Ok(visitor.visit_u128(int));
+        }
+        if let Some(int) = parse_negative_int(v, i128::from_str_radix) {
+            return Ok(visitor.visit_i128(int));
+        }
     }
-    if let Some(int) = parse_negative_int(v, i128::from_str_radix) {
-        return Ok(visitor.visit_i128(int));
+
+    #[cfg(feature = "arbitrary_precision")]
+    {
+        if is_valid_integer_string(v) {
+            return Ok(visitor.visit_str(v));
+        }
     }
+
     Err(visitor)
+}
+
+#[cfg(feature = "arbitrary_precision")]
+pub(crate) fn is_valid_integer_string(s: &str) -> bool {
+    // Validate that this matches the format expected by parse_unsigned_int/parse_negative_int
+    // but is too large to fit in i128/u128
+    let unpositive = s.strip_prefix(['+', '-']).unwrap_or(s);
+
+    if let Some(rest) = unpositive.strip_prefix("0x") {
+        // Hex: no sign after prefix, non-empty, valid hex digits
+        !rest.is_empty() && !rest.starts_with(['+', '-']) && rest.chars().all(|c| c.is_ascii_hexdigit())
+    } else if let Some(rest) = unpositive.strip_prefix("0o") {
+        // Octal: no sign after prefix, non-empty, valid octal digits
+        !rest.is_empty() && !rest.starts_with(['+', '-']) && rest.chars().all(|c| ('0'..='7').contains(&c))
+    } else if let Some(rest) = unpositive.strip_prefix("0b") {
+        // Binary: no sign after prefix, non-empty, valid binary digits
+        !rest.is_empty() && !rest.starts_with(['+', '-']) && rest.chars().all(|c| c == '0' || c == '1')
+    } else {
+        // Decimal: must not be "digits but not number" (leading zeros), non-empty, valid digits
+        !digits_but_not_number(s) && !unpositive.is_empty() && unpositive.chars().all(|c| c.is_ascii_digit())
+    }
 }
 
 pub(crate) fn visit_untagged_scalar<'de, V>(

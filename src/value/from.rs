@@ -21,6 +21,20 @@ from_number! {
     f32 f64
 }
 
+#[cfg(feature = "128bit-support")]
+impl From<i128> for Value {
+    fn from(n: i128) -> Self {
+        Value::Number(n.into())
+    }
+}
+
+#[cfg(feature = "128bit-support")]
+impl From<u128> for Value {
+    fn from(n: u128) -> Self {
+        Value::Number(n.into())
+    }
+}
+
 impl From<bool> for Value {
     /// Convert boolean to `Value`
     ///

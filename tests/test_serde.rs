@@ -79,6 +79,7 @@ fn test_int_max_i64() {
 }
 
 #[test]
+#[cfg(feature = "128bit-support")]
 fn test_i128_small() {
     let thing: i128 = -256;
     let yaml = indoc! {"
@@ -88,6 +89,7 @@ fn test_i128_small() {
 }
 
 #[test]
+#[cfg(feature = "128bit-support")]
 fn test_u128_small() {
     let thing: u128 = 256;
     let yaml = indoc! {"
@@ -575,4 +577,66 @@ fn test_long_string() {
     "};
 
     test_serde(&thing, yaml);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_i128_max() {
+    let thing: i128 = i128::MAX;
+    let yaml = indoc! {"
+        170141183460469231731687303715884105727
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_i128_min() {
+    let thing: i128 = i128::MIN;
+    let yaml = indoc! {"
+        -170141183460469231731687303715884105728
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_u128_max() {
+    let thing: u128 = u128::MAX;
+    let yaml = indoc! {"
+        340282366920938463463374607431768211455
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_i128_beyond_i64() {
+    let thing: i128 = i64::MIN as i128 - 1;
+    let yaml = indoc! {"
+        -9223372036854775809
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
+#[cfg(feature = "128bit-support")]
+fn test_u128_beyond_u64() {
+    let thing: u128 = u64::MAX as u128 + 1;
+    let yaml = indoc! {"
+        18446744073709551616
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
+#[cfg(not(feature = "128bit-support"))]
+fn test_large_int_as_string_without_128bit() {
+    let val_i128: i128 = i64::MIN as i128 - 1;
+    let serialized = serde_yaml_ng::to_string(&val_i128).unwrap();
+    assert!(serialized.contains("-9223372036854775809"));
+
+    let val_u128: u128 = u64::MAX as u128 + 1;
+    let serialized = serde_yaml_ng::to_string(&val_u128).unwrap();
+    assert!(serialized.contains("18446744073709551616"));
 }
