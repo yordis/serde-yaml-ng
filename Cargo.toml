@@ -11,6 +11,11 @@ license = "MIT"
 repository = "https://github.com/acatton/serde-yaml-ng"
 rust-version = "1.64"
 
+[features]
+default = ["128bit-support"]
+128bit-support = []
+arbitrary_precision = []
+
 [dependencies]
 indexmap = "2.2.1"
 itoa = "1.0"

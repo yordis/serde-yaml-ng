@@ -53,6 +53,22 @@ impl<'de> Deserialize<'de> for Value {
                 Ok(Value::Number(f.into()))
             }
 
+            #[cfg(feature = "128bit-support")]
+            fn visit_i128<E>(self, i: i128) -> Result<Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Value::Number(i.into()))
+            }
+
+            #[cfg(feature = "128bit-support")]
+            fn visit_u128<E>(self, u: u128) -> Result<Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Value::Number(u.into()))
+            }
+
             fn visit_str<E>(self, s: &str) -> Result<Value, E>
             where
                 E: de::Error,

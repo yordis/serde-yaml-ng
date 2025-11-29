@@ -85,6 +85,12 @@ impl ser::Serializer for Serializer {
         Ok(Value::Number(Number::from(v)))
     }
 
+    #[cfg(feature = "128bit-support")]
+    fn serialize_i128(self, v: i128) -> Result<Value> {
+        Ok(Value::Number(Number::from(v)))
+    }
+
+    #[cfg(not(feature = "128bit-support"))]
     fn serialize_i128(self, v: i128) -> Result<Value> {
         if let Ok(v) = u64::try_from(v) {
             self.serialize_u64(v)
@@ -111,6 +117,12 @@ impl ser::Serializer for Serializer {
         Ok(Value::Number(Number::from(v)))
     }
 
+    #[cfg(feature = "128bit-support")]
+    fn serialize_u128(self, v: u128) -> Result<Value> {
+        Ok(Value::Number(Number::from(v)))
+    }
+
+    #[cfg(not(feature = "128bit-support"))]
     fn serialize_u128(self, v: u128) -> Result<Value> {
         if let Ok(v) = u64::try_from(v) {
             self.serialize_u64(v)
